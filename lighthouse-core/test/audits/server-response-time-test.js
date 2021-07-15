@@ -6,12 +6,11 @@
 'use strict';
 
 const ServerResponseTime = require('../../audits/server-response-time.js');
-const assert = require('assert').strict;
 const networkRecordsToDevtoolsLog = require('../network-records-to-devtools-log.js');
 
 /* eslint-env jest */
 describe('Performance: server-response-time audit', () => {
-  it('fails when response time of root document is higher than 600ms', () => {
+  it('fails when response time of root document is higher than 600ms', async () => {
     const mainResource = {
       url: 'https://example.com/',
       requestId: '0',
@@ -22,15 +21,21 @@ describe('Performance: server-response-time audit', () => {
     const artifacts = {
       devtoolsLogs: {[ServerResponseTime.DEFAULT_PASS]: devtoolsLog},
       URL: {finalUrl: 'https://example.com/'},
+      GatherContext: {gatherMode: 'navigation'},
     };
 
-    return ServerResponseTime.audit(artifacts, {computedCache: new Map()}).then(result => {
-      assert.strictEqual(result.numericValue, 630);
-      assert.strictEqual(result.score, 0);
+    const result = await ServerResponseTime.audit(artifacts, {computedCache: new Map()});
+    expect(result).toMatchObject({
+      score: 0,
+      numericValue: 630,
+      details: {
+        overallSavingsMs: 530,
+        items: [{url: 'https://example.com/', responseTime: 630}],
+      },
     });
   });
 
-  it('succeeds when response time of root document is lower than 600ms', () => {
+  it('succeeds when response time of root document is lower than 600ms', async () => {
     const mainResource = {
       url: 'https://example.com/',
       requestId: '0',
@@ -41,11 +46,63 @@ describe('Performance: server-response-time audit', () => {
     const artifacts = {
       devtoolsLogs: {[ServerResponseTime.DEFAULT_PASS]: devtoolsLog},
       URL: {finalUrl: 'https://example.com/'},
+      GatherContext: {gatherMode: 'navigation'},
     };
 
-    return ServerResponseTime.audit(artifacts, {computedCache: new Map()}).then(result => {
-      assert.strictEqual(result.numericValue, 200);
-      assert.strictEqual(result.score, 1);
+    const result = await ServerResponseTime.audit(artifacts, {computedCache: new Map()});
+    expect(result).toMatchObject({
+      numericValue: 200,
+      score: 1,
     });
+  });
+
+  it('identifies main resource in timespan mode', async () => {
+    const mainResource = {
+      url: 'https://example.com/',
+      requestId: '0',
+      timing: {receiveHeadersEnd: 400, sendEnd: 200},
+    };
+    const devtoolsLog = networkRecordsToDevtoolsLog([mainResource]);
+
+    const artifacts = {
+      devtoolsLogs: {[ServerResponseTime.DEFAULT_PASS]: devtoolsLog},
+      URL: {finalUrl: 'https://example.com/'},
+      GatherContext: {gatherMode: 'timespan'},
+    };
+
+    const result = await ServerResponseTime.audit(artifacts, {computedCache: new Map()});
+    expect(result).toMatchObject({
+      numericValue: 200,
+      score: 1,
+    });
+  });
+
+  it('result is n/a if no main resource in timespan', async () => {
+    const devtoolsLog = networkRecordsToDevtoolsLog([]);
+
+    const artifacts = {
+      devtoolsLogs: {[ServerResponseTime.DEFAULT_PASS]: devtoolsLog},
+      URL: {finalUrl: 'https://example.com/'},
+      GatherContext: {gatherMode: 'timespan'},
+    };
+
+    const result = await ServerResponseTime.audit(artifacts, {computedCache: new Map()});
+    expect(result).toEqual({
+      score: null,
+      notApplicable: true,
+    });
+  });
+
+  it('throws error if no main resource in navigation', async () => {
+    const devtoolsLog = networkRecordsToDevtoolsLog([]);
+
+    const artifacts = {
+      devtoolsLogs: {[ServerResponseTime.DEFAULT_PASS]: devtoolsLog},
+      URL: {finalUrl: 'https://example.com/'},
+      GatherContext: {gatherMode: 'navigation'},
+    };
+
+    const resultPromise = ServerResponseTime.audit(artifacts, {computedCache: new Map()});
+    await expect(resultPromise).rejects.toThrow(/Unable to identify the main resource/);
   });
 });

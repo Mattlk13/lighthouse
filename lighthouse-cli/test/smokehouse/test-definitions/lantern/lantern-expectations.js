@@ -18,9 +18,6 @@ module.exports = [
         'first-contentful-paint': {
           numericValue: '>2000',
         },
-        'first-cpu-idle': {
-          numericValue: '>2000',
-        },
         'interactive': {
           numericValue: '>2000',
         },
@@ -41,8 +38,7 @@ module.exports = [
           details: {
             items: {
               0: {
-              // FIXME: Appveyor finds this particular assertion very flaky for some reason :(
-                url: process.env.APPVEYOR ? /main/ : /main-thread-consumer/,
+                url: /main-thread-consumer/,
                 scripting: '>1000',
               },
             },

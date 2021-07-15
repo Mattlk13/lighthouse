@@ -7,7 +7,7 @@
 
 /** @typedef {import('./byte-efficiency-audit.js').ByteEfficiencyProduct} ByteEfficiencyProduct */
 /** @typedef {LH.Audit.ByteEfficiencyItem & {source: string, subItems: {type: 'subitems', items: SubItem[]}}} Item */
-/** @typedef {{url: string, sourceTransferBytes: number}} SubItem */
+/** @typedef {{url: string, sourceTransferBytes?: number}} SubItem */
 
 const ByteEfficiencyAudit = require('./byte-efficiency-audit.js');
 const ModuleDuplication = require('../../computed/module-duplication.js');
@@ -48,7 +48,8 @@ class DuplicatedJavascript extends ByteEfficiencyAudit {
       title: str_(UIStrings.title),
       description: str_(UIStrings.description),
       scoreDisplayMode: ByteEfficiencyAudit.SCORING_MODES.NUMERIC,
-      requiredArtifacts: ['devtoolsLogs', 'traces', 'SourceMaps', 'ScriptElements', 'URL'],
+      requiredArtifacts: ['devtoolsLogs', 'traces', 'SourceMaps', 'ScriptElements',
+        'GatherContext', 'URL'],
     };
   }
 
@@ -129,12 +130,9 @@ class DuplicatedJavascript extends ByteEfficiencyAudit {
       context.options && context.options.ignoreThresholdInBytes || IGNORE_THRESHOLD_IN_BYTES;
     const duplication =
       await DuplicatedJavascript._getDuplicationGroupedByNodeModules(artifacts, context);
-    const mainDocumentRecord = await NetworkAnalyzer.findMainDocument(networkRecords);
+    const mainDocumentRecord = NetworkAnalyzer.findOptionalMainDocument(networkRecords);
 
-    /**
-     * @typedef {LH.Audit.ByteEfficiencyItem} Item
-     */
-
+    /** @type {Map<string, number>} */
     const transferRatioByUrl = new Map();
 
     /** @type {Item[]} */

@@ -30,7 +30,7 @@ const TOPLEVEL_TASK_NAME = 'TaskQueueManager::ProcessTaskFromWorkQueue';
 
 /* eslint-env jest */
 describe('PageDependencyGraph computed artifact:', () => {
-  let traceOfTab;
+  let processedTrace;
 
   function addTaskEvents(startTs, duration, evts) {
     const mainEvent = {
@@ -41,12 +41,12 @@ describe('PageDependencyGraph computed artifact:', () => {
       args: {},
     };
 
-    traceOfTab.mainThreadEvents.push(mainEvent);
+    processedTrace.mainThreadEvents.push(mainEvent);
 
     let i = 0;
     for (const evt of evts) {
       i++;
-      traceOfTab.mainThreadEvents.push({
+      processedTrace.mainThreadEvents.push({
         name: evt.name,
         ts: (evt.ts * 1000) || (startTs * 1000 + i),
         args: {data: evt.data},
@@ -55,7 +55,7 @@ describe('PageDependencyGraph computed artifact:', () => {
   }
 
   beforeEach(() => {
-    traceOfTab = {mainThreadEvents: []};
+    processedTrace = {mainThreadEvents: []};
   });
 
   describe('#compute_', () => {
@@ -142,21 +142,21 @@ describe('PageDependencyGraph computed artifact:', () => {
         {name: 'LaterEvent'},
       ]);
 
-      assert.equal(traceOfTab.mainThreadEvents.length, 7);
-      const nodes = PageDependencyGraph.getCPUNodes(traceOfTab);
+      assert.equal(processedTrace.mainThreadEvents.length, 7);
+      const nodes = PageDependencyGraph.getCPUNodes(processedTrace);
       assert.equal(nodes.length, 2);
 
       const node1 = nodes[0];
       assert.equal(node1.id, '1.0');
       assert.equal(node1.type, 'cpu');
-      assert.equal(node1.event, traceOfTab.mainThreadEvents[0]);
+      assert.equal(node1.event, processedTrace.mainThreadEvents[0]);
       assert.equal(node1.childEvents.length, 2);
       assert.equal(node1.childEvents[1].name, 'OtherEvent');
 
       const node2 = nodes[1];
       assert.equal(node2.id, '1.250000');
       assert.equal(node2.type, 'cpu');
-      assert.equal(node2.event, traceOfTab.mainThreadEvents[5]);
+      assert.equal(node2.event, processedTrace.mainThreadEvents[5]);
       assert.equal(node2.childEvents.length, 1);
       assert.equal(node2.childEvents[0].name, 'LaterEvent');
     });
@@ -172,7 +172,7 @@ describe('PageDependencyGraph computed artifact:', () => {
 
       addTaskEvents(0, 0, []);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -201,7 +201,7 @@ describe('PageDependencyGraph computed artifact:', () => {
         {name: 'XHRReadyStateChange', data: {readyState: 4, url: '4'}},
       ]);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -227,7 +227,7 @@ describe('PageDependencyGraph computed artifact:', () => {
 
       addTaskEvents(0, 0, []);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -266,7 +266,7 @@ describe('PageDependencyGraph computed artifact:', () => {
         {name: 'ResourceSendRequest', data: {requestId: 5}},
       ]);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -294,7 +294,7 @@ describe('PageDependencyGraph computed artifact:', () => {
         {name: 'TimerFire', data: {timerId: 'timer1'}},
       ]);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -327,7 +327,7 @@ describe('PageDependencyGraph computed artifact:', () => {
         {name: 'XHRReadyStateChange', data: {readyState: 4, url: '4'}},
       ]);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -372,7 +372,7 @@ describe('PageDependencyGraph computed artifact:', () => {
         {name: 'XHRReadyStateChange', data: {readyState: 4, url: '4'}},
       ]);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -395,7 +395,7 @@ describe('PageDependencyGraph computed artifact:', () => {
       const networkRecords = [request0];
 
       const makeShortEvent = firstEventName => {
-        const startTs = traceOfTab.mainThreadEvents.length * 100;
+        const startTs = processedTrace.mainThreadEvents.length * 100;
         addTaskEvents(startTs, 5, [
           {name: firstEventName, data: {url: '0'}},
         ]);
@@ -411,7 +411,7 @@ describe('PageDependencyGraph computed artifact:', () => {
         makeShortEvent(eventName);
       }
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const cpuNodes = [];
       graph.traverse(node => node.type === 'cpu' && cpuNodes.push(node));
 
@@ -447,7 +447,7 @@ describe('PageDependencyGraph computed artifact:', () => {
 
       addTaskEvents(0, 0, []);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -463,15 +463,19 @@ describe('PageDependencyGraph computed artifact:', () => {
       const request2 = createRequest(2, '2', 5);
       const request3 = createRequest(3, '3', 5);
       const request4 = createRequest(4, '4', 20);
+      // Set multiple initiator requests through script stack.
       request4.initiator = {
         type: 'script',
         stack: {callFrames: [{url: '2'}], parent: {parent: {callFrames: [{url: '3'}]}}},
       };
+      // Also set the initiatorRequest that Lighthouse's network-recorder.js creates.
+      // This should be ignored and only used as a fallback.
+      request4.initiatorRequest = request1;
       const networkRecords = [request1, request2, request3, request4];
 
       addTaskEvents(0, 0, []);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -496,7 +500,7 @@ describe('PageDependencyGraph computed artifact:', () => {
 
       addTaskEvents(0, 0, []);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -513,16 +517,18 @@ describe('PageDependencyGraph computed artifact:', () => {
       const request2Prefetch = createRequest(2, 'a.com/js', 5);
       const request2Fetch = createRequest(3, 'a.com/js', 10);
       const request3 = createRequest(4, 'a.com/4', 20);
+      // Set the initiator to an ambiguous URL (there are 2 requests for a.com/js)
       request3.initiator = {
         type: 'script',
         stack: {callFrames: [{url: 'a.com/js'}], parent: {parent: {callFrames: [{url: 'js'}]}}},
       };
+      // Set the initiatorRequest that it should fallback to.
       request3.initiatorRequest = request2Fetch;
       const networkRecords = [request1, request2Prefetch, request2Fetch, request3];
 
       addTaskEvents(0, 0, []);
 
-      const graph = PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
       const nodes = [];
       graph.traverse(node => nodes.push(node));
 
@@ -534,6 +540,59 @@ describe('PageDependencyGraph computed artifact:', () => {
       assert.deepEqual(nodes[3].getDependencies(), [nodes[2]]);
     });
 
+    it('should not link up initiators with circular dependencies', () => {
+      const rootRequest = createRequest(1, 'a.com', 0);
+      // jsRequest1 initiated by jsRequest2
+      //              *AND*
+      // jsRequest2 initiated by jsRequest1
+      const jsRequest1 = createRequest(2, 'a.com/js1', 1, {url: 'a.com/js2'});
+      const jsRequest2 = createRequest(3, 'a.com/js2', 1, {url: 'a.com/js1'});
+      const networkRecords = [rootRequest, jsRequest1, jsRequest2];
+
+      addTaskEvents(0, 0, []);
+
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
+      const nodes = [];
+      graph.traverse(node => nodes.push(node));
+      nodes.sort((a, b) => a.id - b.id);
+
+      assert.equal(nodes.length, 3);
+      assert.deepEqual(nodes.map(node => node.id), [1, 2, 3]);
+      assert.deepEqual(nodes[0].getDependencies(), []);
+      // We don't know which of the initiators to trust in a cycle, so for now we
+      // trust the earliest one (mostly because it's simplest).
+      // In the wild so far we've only seen this for self-referential relationships.
+      // If the evidence changes, then feel free to change these expectations :)
+      assert.deepEqual(nodes[1].getDependencies(), [nodes[2]]);
+      assert.deepEqual(nodes[2].getDependencies(), [nodes[0]]);
+    });
+
+    it('should not link up initiatorRequests with circular dependencies', () => {
+      const rootRequest = createRequest(1, 'a.com', 0);
+      // jsRequest1 initiated by jsRequest2
+      //              *AND*
+      // jsRequest2 initiated by jsRequest1
+      const jsRequest1 = createRequest(2, 'a.com/js1', 1);
+      const jsRequest2 = createRequest(3, 'a.com/js2', 1);
+      jsRequest1.initiatorRequest = jsRequest2;
+      jsRequest2.initiatorRequest = jsRequest1;
+      const networkRecords = [rootRequest, jsRequest1, jsRequest2];
+
+      addTaskEvents(0, 0, []);
+
+      const graph = PageDependencyGraph.createGraph(processedTrace, networkRecords);
+      const nodes = [];
+      graph.traverse(node => nodes.push(node));
+      nodes.sort((a, b) => a.id - b.id);
+
+      assert.equal(nodes.length, 3);
+      assert.deepEqual(nodes.map(node => node.id), [1, 2, 3]);
+      assert.deepEqual(nodes[0].getDependencies(), []);
+      assert.deepEqual(nodes[1].getDependencies(), [nodes[2]]);
+      assert.deepEqual(nodes[2].getDependencies(), [nodes[0]]);
+    });
+
+
     it('should throw when root node is not related to main document', () => {
       const request1 = createRequest(1, '1', 0, null, NetworkRequest.TYPES.Other);
       const request2 = createRequest(2, '2', 5, null, NetworkRequest.TYPES.Document);
@@ -541,7 +600,7 @@ describe('PageDependencyGraph computed artifact:', () => {
 
       addTaskEvents(0, 0, []);
 
-      const fn = () => PageDependencyGraph.createGraph(traceOfTab, networkRecords);
+      const fn = () => PageDependencyGraph.createGraph(processedTrace, networkRecords);
       expect(fn).toThrow(/root node.*document/i);
     });
   });

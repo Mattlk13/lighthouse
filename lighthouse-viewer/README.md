@@ -8,8 +8,10 @@ Run the following in the root folder of a Lighthouse checkout:
 
 * `yarn`
 * `yarn build-viewer`
+* `yarn serve-gh-pages`
+* `open http://localhost:8000/viewer/`
 
-This compiles and minifies `app/src/main.js`. Results are written to `dist/viewer/`.
+This compiles and minifies `app/src/main.js`. Results are written to `dist/gh-pages/viewer/`.
 
 ## Deploy
 
@@ -33,7 +35,7 @@ e.g., `http://localhost:8000/?gist=bd1779783a5bbcb348564a58f80f7099`
 
 Pass the absolute URL as `jsonurl` query parameter.
 
-e.g., `http://localhost:8000/?josnurl=https://gist.githubusercontent.com/Kikobeats/d570a1aa285c5d1d97bbda10b92fb97f/raw/4b0f14a5914edd25c95b4bd9d09728ab42181c3e/lighthouse.json`
+e.g., `http://localhost:8000/?jsonurl=https://gist.githubusercontent.com/Kikobeats/d570a1aa285c5d1d97bbda10b92fb97f/raw/4b0f14a5914edd25c95b4bd9d09728ab42181c3e/lighthouse.json`
 
 ### Run and load from PageSpeed Insights
 

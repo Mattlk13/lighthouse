@@ -10,7 +10,9 @@ const perfConfig = {
   extends: 'lighthouse:default',
   settings: {
     throttlingMethod: 'devtools',
-    onlyCategories: ['performance'],
+    // preload-fonts isn't a performance audit, but can easily leverage the font
+    // webpages present here, hence the inclusion of 'best-practices'.
+    onlyCategories: ['performance', 'best-practices'],
 
     // A mixture of under, over, and meeting budget to exercise all paths.
     budgets: [{
@@ -39,7 +41,6 @@ const perfConfig = {
       ],
       timings: [
         {metric: 'first-contentful-paint', budget: 2000},
-        {metric: 'first-cpu-idle', budget: 2000},
         {metric: 'interactive', budget: 2000},
         {metric: 'first-meaningful-paint', budget: 2000},
         {metric: 'max-potential-fid', budget: 2000},

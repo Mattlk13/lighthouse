@@ -5,11 +5,8 @@
  */
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-
-/*
- * The relationship between these CLI modules:
+/**
+ * @fileoverview The relationship between these CLI modules:
  *
  *   index.js     : only calls bin.js's begin()
  *   cli-flags.js : leverages yargs to read argv, outputs LH.CliFlags
@@ -21,24 +18,25 @@ const path = require('path');
  *               cli-flags        lh-core/index
  */
 
+const fs = require('fs');
+const path = require('path');
 const commands = require('./commands/commands.js');
 const printer = require('./printer.js');
-const getFlags = require('./cli-flags.js').getFlags;
-const runLighthouse = require('./run.js').runLighthouse;
-const generateConfig = require('../lighthouse-core/index.js').generateConfig;
-
+const {getFlags} = require('./cli-flags.js');
+const {runLighthouse} = require('./run.js');
+const {generateConfig} = require('../lighthouse-core/index.js');
 const log = require('lighthouse-logger');
 const pkg = require('../package.json');
 const Sentry = require('../lighthouse-core/lib/sentry.js');
-
 const updateNotifier = require('update-notifier');
-const askPermission = require('./sentry-prompt.js').askPermission;
+const {askPermission} = require('./sentry-prompt.js');
+const {LH_ROOT} = require('../root.js');
 
 /**
  * @return {boolean}
  */
 function isDev() {
-  return fs.existsSync(path.join(__dirname, '../.git'));
+  return fs.existsSync(path.join(LH_ROOT, '/.git'));
 }
 
 /**
@@ -67,7 +65,7 @@ async function begin() {
   if (cliFlags.configPath) {
     // Resolve the config file path relative to where cli was called.
     cliFlags.configPath = path.resolve(process.cwd(), cliFlags.configPath);
-    configJson = /** @type {LH.Config.Json} */ (require(cliFlags.configPath));
+    configJson = require(cliFlags.configPath);
   } else if (cliFlags.preset) {
     configJson = require(`../lighthouse-core/config/${cliFlags.preset}-config.js`);
   }
@@ -94,27 +92,6 @@ async function begin() {
     !cliFlags.outputPath
   ) {
     cliFlags.outputPath = 'stdout';
-  }
-
-  // @ts-ignore - deprecation message for removed disableDeviceEmulation; can remove warning in v6.
-  if (cliFlags.disableDeviceEmulation) {
-    log.warn('config', 'The "--disable-device-emulation" has been removed in v5.' +
-        ' Please use "--emulated-form-factor=none" instead.');
-  }
-
-  if (typeof cliFlags.extraHeaders === 'string') {
-    // TODO: LH.Flags.extraHeaders is sometimes actually a string at this point, but needs to be
-    // copied over to LH.Settings.extraHeaders, which is LH.Crdp.Network.Headers. Force
-    // the conversion here, but long term either the CLI flag or the setting should have
-    // a different name.
-    // @ts-ignore
-    let extraHeadersStr = /** @type {string} */ (cliFlags.extraHeaders);
-    // If not a JSON object, assume it's a path to a JSON file.
-    if (extraHeadersStr.substr(0, 1) !== '{') {
-      extraHeadersStr = fs.readFileSync(extraHeadersStr, 'utf-8');
-    }
-
-    cliFlags.extraHeaders = JSON.parse(extraHeadersStr);
   }
 
   if (cliFlags.precomputedLanternDataPath) {

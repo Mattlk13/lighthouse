@@ -11,6 +11,11 @@
  */
 module.exports = [
   {
+    networkRequests: {
+      // 8 requests made for normal page testing.
+      // 1 extra request made because stylesheets are evicted from the cache by the time DT opens.
+      length: 9,
+    },
     lhr: {
       requestedUrl: 'http://localhost:10200/preload.html',
       finalUrl: 'http://localhost:10200/preload.html',
@@ -19,9 +24,6 @@ module.exports = [
           score: '>=0.80', // primarily just making sure it didn't fail/go crazy, specific value isn't that important
         },
         'first-meaningful-paint': {
-          score: '>=0.90', // primarily just making sure it didn't fail/go crazy, specific value isn't that important
-        },
-        'first-cpu-idle': {
           score: '>=0.90', // primarily just making sure it didn't fail/go crazy, specific value isn't that important
         },
         'interactive': {
@@ -39,17 +41,19 @@ module.exports = [
           },
         },
         'uses-rel-preload': {
-          score: '<1',
-          numericValue: '>500',
-          warnings: {
-            0: /level-2.*warning/,
-            length: 1,
-          },
-          details: {
-            items: {
-              length: 1,
-            },
-          },
+          scoreDisplayMode: 'notApplicable',
+          // Disabled for now, see https://github.com/GoogleChrome/lighthouse/issues/11960
+          // score: '<1',
+          // numericValue: '>500',
+          // warnings: {
+          //   0: /level-2.*warning/,
+          //   length: 1,
+          // },
+          // details: {
+          //   items: {
+          //     length: 1,
+          //   },
+          // },
         },
         'uses-rel-preconnect': {
           score: 1,
@@ -62,6 +66,9 @@ module.exports = [
     },
   },
   {
+    networkRequests: {
+      length: 8,
+    },
     lhr: {
       requestedUrl: 'http://localhost:10200/perf/perf-budgets/load-things.html',
       finalUrl: 'http://localhost:10200/perf/perf-budgets/load-things.html',
@@ -72,11 +79,11 @@ module.exports = [
           details: {
             items: [
               {resourceType: 'total', requestCount: 10, transferSize: '168000±1000'},
-              {resourceType: 'font', requestCount: 2, transferSize: '80000±1000'},
+              {resourceType: 'font', requestCount: 2, transferSize: '81000±1000'},
               {resourceType: 'script', requestCount: 3, transferSize: '55000±1000'},
               {resourceType: 'image', requestCount: 2, transferSize: '28000±1000'},
-              {resourceType: 'document', requestCount: 1, transferSize: '2200±100'},
-              {resourceType: 'other', requestCount: 1, transferSize: '1000±50'},
+              {resourceType: 'document', requestCount: 1, transferSize: '2200±150'},
+              {resourceType: 'other', requestCount: 1, transferSize: '1030±100'},
               {resourceType: 'stylesheet', requestCount: 1, transferSize: '450±100'},
               {resourceType: 'media', requestCount: 0, transferSize: 0},
               {resourceType: 'third-party', requestCount: 0, transferSize: 0},
@@ -140,6 +147,9 @@ module.exports = [
     },
   },
   {
+    networkRequests: {
+      length: 5,
+    },
     lhr: {
       requestedUrl: 'http://localhost:10200/perf/fonts.html',
       finalUrl: 'http://localhost:10200/perf/fonts.html',
@@ -147,15 +157,111 @@ module.exports = [
         'font-display': {
           score: 0,
           details: {
-            items: {
-              length: 2,
-            },
+            items: [
+              {
+                url: 'http://localhost:10200/perf/lobster-v20-latin-regular.woff2',
+              },
+            ],
           },
+        },
+        'preload-fonts': {
+          scoreDisplayMode: 'notApplicable',
+          // Disabled for now, see https://github.com/GoogleChrome/lighthouse/issues/11960
+          // score: 0,
+          // details: {
+          //   items: [
+          //     {
+          //       url: 'http://localhost:10200/perf/lobster-two-v10-latin-700.woff2?delay=1000',
+          //     },
+          //   ],
+          // },
         },
       },
     },
   },
   {
+    networkRequests: {
+      length: 3,
+    },
+    artifacts: {
+      TraceElements: [
+        {
+          traceEventType: 'largest-contentful-paint',
+          node: {
+            nodeLabel: 'section > img',
+            snippet: '<img src="../dobetterweb/lighthouse-480x318.jpg">',
+            boundingRect: {
+              top: 108,
+              bottom: 426,
+              left: 8,
+              right: 488,
+              width: 480,
+              height: 318,
+            },
+          },
+        },
+        {
+          traceEventType: 'layout-shift',
+          node: {
+            selector: 'body > h1',
+            nodeLabel: 'Please don\'t move me',
+            snippet: '<h1>',
+            boundingRect: {
+              top: 465,
+              bottom: 502,
+              left: 8,
+              right: 352,
+              width: 344,
+              height: 37,
+            },
+          },
+          score: '0.058 +/- 0.01',
+        },
+        {
+          traceEventType: 'layout-shift',
+          node: {
+            nodeLabel: 'Sorry!',
+            snippet: '<div style="height: 18px;">',
+            boundingRect: {
+              top: 426,
+              bottom: 444,
+              left: 8,
+              right: 352,
+              width: 344,
+              height: 18,
+            },
+          },
+          score: '0.026 +/- 0.01',
+        },
+        {
+          // Requires compositor failure reasons to be in the trace
+          // for `failureReasonsMask` and `unsupportedProperties`
+          // https://chromiumdash.appspot.com/commit/995baabedf9e70d16deafc4bc37a2b215a9b8ec9
+          _minChromiumMilestone: 86,
+          traceEventType: 'animation',
+          node: {
+            selector: 'body > div#animate-me',
+            nodeLabel: 'This is changing font size',
+            snippet: '<div id="animate-me">',
+            boundingRect: {
+              top: 8,
+              bottom: 108,
+              left: 8,
+              right: 108,
+              width: 100,
+              height: 100,
+            },
+          },
+          animations: [
+            {
+              name: 'anim',
+              failureReasonsMask: 8224,
+              unsupportedProperties: ['font-size'],
+            },
+          ],
+        },
+      ],
+    },
     lhr: {
       requestedUrl: 'http://localhost:10200/perf/trace-elements.html',
       finalUrl: 'http://localhost:10200/perf/trace-elements.html',
@@ -168,23 +274,22 @@ module.exports = [
               {
                 node: {
                   type: 'node',
-                  nodeLabel: 'img',
-                  selector: 'body > div#late-content > img',
+                  nodeLabel: 'section > img',
+                  path: '0,HTML,1,BODY,1,DIV,a,#document-fragment,0,SECTION,0,IMG',
                 },
               },
             ],
           },
         },
-        // TODO(COMPAT): uncomment when Chrome m84 lands
-        // 'layout-shift-elements': {
-        //   score: null,
-        //   displayValue: '2 elements found',
-        //   details: {
-        //     items: {
-        //       length: 2,
-        //     },
-        //   },
-        // },
+        'layout-shift-elements': {
+          score: null,
+          displayValue: '2 elements found',
+          details: {
+            items: {
+              length: 2,
+            },
+          },
+        },
         'long-tasks': {
           score: null,
           details: {
@@ -201,28 +306,37 @@ module.exports = [
     },
   },
   {
+    networkRequests: {
+      length: 2,
+    },
     lhr: {
-      requestedUrl: 'http://localhost:10200/perf/trace-elements.html?missing',
-      finalUrl: 'http://localhost:10200/perf/trace-elements.html?missing',
+      requestedUrl: 'http://localhost:10200/perf/frame-metrics.html',
+      finalUrl: 'http://localhost:10200/perf/frame-metrics.html',
       audits: {
-        'largest-contentful-paint-element': {
+        'metrics': {
           score: null,
           details: {
+            type: 'debugdata',
             items: [
               {
-                node: {
-                  type: 'node',
-                  selector: 'body',
-                },
+                // Weighted CLS score was added to the trace in m90:
+                // https://bugs.chromium.org/p/chromium/issues/detail?id=1173139
+                //
+                // Weighted score on emulated mobile bug fixed in m92:
+                // https://chromium.googlesource.com/chromium/src/+/042fbfb4cc6a675da0dff4bf3fc08622af42422b
+                _minChromiumMilestone: 92,
+                firstContentfulPaint: '>5000',
+                firstContentfulPaintAllFrames: '<5000',
+                largestContentfulPaint: '>5000',
+                largestContentfulPaintAllFrames: '<5000',
+                cumulativeLayoutShift: '0.197 +/- 0.001',
+                cumulativeLayoutShiftMainFrame: '0.001 +/- 0.0005',
+                totalCumulativeLayoutShift: '0.001 +/- 0.0005',
+              },
+              {
+                lcpInvalidated: false,
               },
             ],
-          },
-        },
-        'layout-shift-elements': {
-          score: null,
-          scoreDisplayMode: 'notApplicable',
-          details: {
-            items: [],
           },
         },
       },

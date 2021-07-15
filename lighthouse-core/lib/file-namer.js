@@ -5,8 +5,6 @@
  */
 'use strict';
 
-/* global URL */
-
 /**
  * @fileoverview
  * @suppress {reportUnknownTypes}
@@ -27,7 +25,7 @@ function getFilenamePrefix(lhr) {
   const dateParts = date.toLocaleDateString('en-US', {
     year: 'numeric', month: '2-digit', day: '2-digit',
   }).split('/');
-  // @ts-ignore - parts exists
+  // @ts-expect-error - parts exists
   dateParts.unshift(dateParts.pop());
   const dateStr = dateParts.join('-');
 
@@ -36,7 +34,4 @@ function getFilenamePrefix(lhr) {
   return filenamePrefix.replace(/[/?<>\\:*|"]/g, '-');
 }
 
-// don't attempt to export in the browser.
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {getFilenamePrefix};
-}
+module.exports = {getFilenamePrefix};

@@ -9,6 +9,7 @@
 
 const constants = require('./constants.js');
 const i18n = require('../lib/i18n/i18n.js');
+const m2a = require('./metrics-to-audits.js');
 
 const UIStrings = {
   /** Title of the Performance category of audits. Equivalent to 'Web performance', this term is inclusive of all web page speed and loading optimization topics. Also used as a label of a score gauge; try to limit to 20 characters. */
@@ -72,7 +73,7 @@ const UIStrings = {
   /** Title of the navigation section within the Accessibility category. Within this section are audits with descriptive titles that highlight opportunities to improve the experience of reading tabular or list data using assistive technology. */
   a11yTablesListsVideoGroupTitle: 'Tables and lists',
   /** Description of the navigation section within the Accessibility category. Within this section are audits with descriptive titles that highlight opportunities to improve the experience of reading tabular or list data using assistive technology. */
-  a11yTablesListsVideoGroupDescription: 'These are opportunities to to improve the experience of reading tabular or list data using assistive technology, like a screen reader.',
+  a11yTablesListsVideoGroupDescription: 'These are opportunities to improve the experience of reading tabular or list data using assistive technology, like a screen reader.',
   /** Title of the Search Engine Optimization (SEO) category of audits. This is displayed at the top of a list of audits focused on topics related to optimizing a website for indexing by search engines. Also used as a label of a score gauge; try to limit to 20 characters. */
   seoCategoryTitle: 'SEO',
   /** Description of the Search Engine Optimization (SEO) category. This is displayed at the top of a list of audits focused on optimizing a website for indexing by search engines. No character length limits. 'Learn More' becomes link text to additional documentation. */
@@ -113,8 +114,6 @@ const UIStrings = {
   bestPracticesBrowserCompatGroupTitle: 'Browser Compatibility',
   /** Title of the General group of the Best Practices category. Within this section are the audits that don't belong to a specific group but are of general interest. */
   bestPracticesGeneralGroupTitle: 'General',
-  /** Title of the Fast and Reliable section of the web app category. Within this section are audits that check if the web site loaded quickly and can reliably load even if the internet connection is very slow or goes offline. */
-  pwaFastReliableGroupTitle: 'Fast and reliable',
   /** Title of the Installable section of the web app category. Within this section are audits that check if Chrome supports installing the web site as an app on their device. */
   pwaInstallableGroupTitle: 'Installable',
   /** Title of the "PWA Optimized" section of the web app category. Within this section are audits that check if the developer has taken advantage of features to make their web page more enjoyable and engaging for the user. */
@@ -138,7 +137,6 @@ const defaultConfig = {
       'css-usage',
       'js-usage',
       'viewport-dimensions',
-      'runtime-exceptions',
       'console-messages',
       'anchor-elements',
       'image-elements',
@@ -146,7 +144,10 @@ const defaultConfig = {
       'meta-elements',
       'script-elements',
       'iframe-elements',
+      'form-elements',
       'main-document-content',
+      'gather-context',
+      'global-listeners',
       'dobetterweb/appcache',
       'dobetterweb/doctype',
       'dobetterweb/domstats',
@@ -162,6 +163,7 @@ const defaultConfig = {
       'trace-elements',
       'inspector-issues',
       'source-maps',
+      'full-page-screenshot',
     ],
   },
   {
@@ -169,8 +171,6 @@ const defaultConfig = {
     loadFailureMode: 'ignore',
     gatherers: [
       'service-worker',
-      'offline',
-      'start-url',
     ],
   },
   {
@@ -180,30 +180,24 @@ const defaultConfig = {
     blockedUrlPatterns: ['*.css', '*.jpg', '*.jpeg', '*.png', '*.gif', '*.svg', '*.ttf', '*.woff', '*.woff2'],
     gatherers: [
       'http-redirect',
-      'html-without-javascript',
     ],
   }],
   audits: [
     'is-on-https',
     'redirects-http',
     'service-worker',
-    'works-offline',
     'viewport',
-    'without-javascript',
     'metrics/first-contentful-paint',
     'metrics/largest-contentful-paint',
     'metrics/first-meaningful-paint',
-    'load-fast-enough-for-pwa',
     'metrics/speed-index',
     'screenshot-thumbnails',
     'final-screenshot',
-    'metrics/estimated-input-latency',
     'metrics/total-blocking-time',
     'metrics/max-potential-fid',
     'metrics/cumulative-layout-shift',
     'errors-in-console',
     'server-response-time',
-    'metrics/first-cpu-idle',
     'metrics/interactive',
     'user-timings',
     'critical-request-chains',
@@ -216,6 +210,7 @@ const defaultConfig = {
     'content-width',
     'image-aspect-ratio',
     'image-size-responsive',
+    'preload-fonts',
     'deprecations',
     'mainthread-work-breakdown',
     'bootup-time',
@@ -228,27 +223,40 @@ const defaultConfig = {
     'network-server-latency',
     'main-thread-tasks',
     'metrics',
-    'offline-start-url',
     'performance-budget',
     'timing-budget',
     'resource-summary',
     'third-party-summary',
+    'third-party-facades',
     'largest-contentful-paint-element',
     'layout-shift-elements',
     'long-tasks',
+    'no-unload-listeners',
+    'non-composited-animations',
+    'unsized-images',
+    'valid-source-maps',
+    'preload-lcp-image',
+    'csp-xss',
+    'full-page-screenshot',
+    'script-treemap-data',
     'manual/pwa-cross-browser',
     'manual/pwa-page-transitions',
     'manual/pwa-each-page-has-url',
     'accessibility/accesskeys',
     'accessibility/aria-allowed-attr',
+    'accessibility/aria-command-name',
     'accessibility/aria-hidden-body',
     'accessibility/aria-hidden-focus',
     'accessibility/aria-input-field-name',
+    'accessibility/aria-meter-name',
+    'accessibility/aria-progressbar-name',
     'accessibility/aria-required-attr',
     'accessibility/aria-required-children',
     'accessibility/aria-required-parent',
     'accessibility/aria-roles',
     'accessibility/aria-toggle-field-name',
+    'accessibility/aria-tooltip-name',
+    'accessibility/aria-treeitem-name',
     'accessibility/aria-valid-attr-value',
     'accessibility/aria-valid-attr',
     'accessibility/button-name',
@@ -267,7 +275,6 @@ const defaultConfig = {
     'accessibility/image-alt',
     'accessibility/input-image-alt',
     'accessibility/label',
-    'accessibility/layout-table',
     'accessibility/link-name',
     'accessibility/list',
     'accessibility/listitem',
@@ -279,7 +286,6 @@ const defaultConfig = {
     'accessibility/th-has-data-cells',
     'accessibility/valid-lang',
     'accessibility/video-caption',
-    'accessibility/video-description',
     'accessibility/manual/custom-controls-labels',
     'accessibility/manual/custom-controls-roles',
     'accessibility/manual/focus-traps',
@@ -298,17 +304,20 @@ const defaultConfig = {
     'byte-efficiency/unminified-javascript',
     'byte-efficiency/unused-css-rules',
     'byte-efficiency/unused-javascript',
-    'byte-efficiency/uses-webp-images',
+    'byte-efficiency/modern-image-formats',
     'byte-efficiency/uses-optimized-images',
     'byte-efficiency/uses-text-compression',
     'byte-efficiency/uses-responsive-images',
     'byte-efficiency/efficient-animated-content',
+    'byte-efficiency/duplicated-javascript',
+    'byte-efficiency/legacy-javascript',
     'dobetterweb/appcache-manifest',
     'dobetterweb/doctype',
     'dobetterweb/charset',
     'dobetterweb/dom-size',
     'dobetterweb/external-anchors-use-rel-noopener',
     'dobetterweb/geolocation-on-start',
+    'dobetterweb/inspector-issues',
     'dobetterweb/no-document-write',
     'dobetterweb/no-vulnerable-libraries',
     'dobetterweb/js-libraries',
@@ -345,9 +354,6 @@ const defaultConfig = {
     'diagnostics': {
       title: str_(UIStrings.diagnosticsGroupTitle),
       description: str_(UIStrings.diagnosticsGroupDescription),
-    },
-    'pwa-fast-reliable': {
-      title: str_(UIStrings.pwaFastReliableGroupTitle),
     },
     'pwa-installable': {
       title: str_(UIStrings.pwaInstallableGroupTitle),
@@ -416,17 +422,16 @@ const defaultConfig = {
     'performance': {
       title: str_(UIStrings.performanceCategoryTitle),
       auditRefs: [
-        {id: 'first-contentful-paint', weight: 15, group: 'metrics'},
-        {id: 'speed-index', weight: 15, group: 'metrics'},
-        {id: 'largest-contentful-paint', weight: 25, group: 'metrics'},
-        {id: 'interactive', weight: 15, group: 'metrics'},
-        {id: 'total-blocking-time', weight: 25, group: 'metrics'},
-        {id: 'cumulative-layout-shift', weight: 5, group: 'metrics'},
-        // intentionally left out of metrics group so they won't be displayed
-        {id: 'first-cpu-idle', weight: 0},
+        {id: 'first-contentful-paint', weight: 10, group: 'metrics', acronym: 'FCP', relevantAudits: m2a.fcpRelevantAudits},
+        {id: 'speed-index', weight: 10, group: 'metrics', acronym: 'SI'},
+        {id: 'largest-contentful-paint', weight: 25, group: 'metrics', acronym: 'LCP', relevantAudits: m2a.lcpRelevantAudits},
+        {id: 'interactive', weight: 10, group: 'metrics', acronym: 'TTI'},
+        {id: 'total-blocking-time', weight: 30, group: 'metrics', acronym: 'TBT', relevantAudits: m2a.tbtRelevantAudits},
+        {id: 'cumulative-layout-shift', weight: 15, group: 'metrics', acronym: 'CLS', relevantAudits: m2a.clsRelevantAudits},
+
+        // These are our "invisible" metrics. Not displayed, but still in the LHR
         {id: 'max-potential-fid', weight: 0},
-        {id: 'first-meaningful-paint', weight: 0},
-        {id: 'estimated-input-latency', weight: 0},
+        {id: 'first-meaningful-paint', weight: 0, acronym: 'FMP'},
 
         {id: 'render-blocking-resources', weight: 0, group: 'load-opportunities'},
         {id: 'uses-responsive-images', weight: 0, group: 'load-opportunities'},
@@ -436,13 +441,17 @@ const defaultConfig = {
         {id: 'unused-css-rules', weight: 0, group: 'load-opportunities'},
         {id: 'unused-javascript', weight: 0, group: 'load-opportunities'},
         {id: 'uses-optimized-images', weight: 0, group: 'load-opportunities'},
-        {id: 'uses-webp-images', weight: 0, group: 'load-opportunities'},
+        {id: 'modern-image-formats', weight: 0, group: 'load-opportunities'},
         {id: 'uses-text-compression', weight: 0, group: 'load-opportunities'},
         {id: 'uses-rel-preconnect', weight: 0, group: 'load-opportunities'},
         {id: 'server-response-time', weight: 0, group: 'load-opportunities'},
         {id: 'redirects', weight: 0, group: 'load-opportunities'},
         {id: 'uses-rel-preload', weight: 0, group: 'load-opportunities'},
+        {id: 'uses-http2', weight: 0, group: 'load-opportunities'},
         {id: 'efficient-animated-content', weight: 0, group: 'load-opportunities'},
+        {id: 'duplicated-javascript', weight: 0, group: 'load-opportunities'},
+        {id: 'legacy-javascript', weight: 0, group: 'load-opportunities'},
+        {id: 'preload-lcp-image', weight: 0, group: 'load-opportunities'},
         {id: 'total-byte-weight', weight: 0, group: 'diagnostics'},
         {id: 'uses-long-cache-ttl', weight: 0, group: 'diagnostics'},
         {id: 'dom-size', weight: 0, group: 'diagnostics'},
@@ -455,12 +464,14 @@ const defaultConfig = {
         {id: 'timing-budget', weight: 0, group: 'budgets'},
         {id: 'resource-summary', weight: 0, group: 'diagnostics'},
         {id: 'third-party-summary', weight: 0, group: 'diagnostics'},
+        {id: 'third-party-facades', weight: 0, group: 'diagnostics'},
         {id: 'largest-contentful-paint-element', weight: 0, group: 'diagnostics'},
         {id: 'layout-shift-elements', weight: 0, group: 'diagnostics'},
-        {id: 'uses-http2', weight: 0, group: 'diagnostics'},
         {id: 'uses-passive-event-listeners', weight: 0, group: 'diagnostics'},
         {id: 'no-document-write', weight: 0, group: 'diagnostics'},
         {id: 'long-tasks', weight: 0, group: 'diagnostics'},
+        {id: 'non-composited-animations', weight: 0, group: 'diagnostics'},
+        {id: 'unsized-images', weight: 0, group: 'diagnostics'},
         // Audits past this point don't belong to a group and will not be shown automatically
         {id: 'network-requests', weight: 0},
         {id: 'network-rtt', weight: 0},
@@ -470,6 +481,7 @@ const defaultConfig = {
         {id: 'metrics', weight: 0},
         {id: 'screenshot-thumbnails', weight: 0},
         {id: 'final-screenshot', weight: 0},
+        {id: 'script-treemap-data', weight: 0},
       ],
     },
     'accessibility': {
@@ -478,19 +490,24 @@ const defaultConfig = {
       manualDescription: str_(UIStrings.a11yCategoryManualDescription),
       // Audit weights are meant to match the aXe scoring system of
       // minor, moderate, serious, and critical.
-      // See the audits listed at dequeuniversity.com/rules/axe/3.2.
+      // See the audits listed at dequeuniversity.com/rules/axe/4.1.
       // Click on an audit and check the right hand column to see its severity.
       auditRefs: [
         {id: 'accesskeys', weight: 3, group: 'a11y-navigation'},
         {id: 'aria-allowed-attr', weight: 10, group: 'a11y-aria'},
+        {id: 'aria-command-name', weight: 3, group: 'a11y-aria'},
         {id: 'aria-hidden-body', weight: 10, group: 'a11y-aria'},
         {id: 'aria-hidden-focus', weight: 3, group: 'a11y-aria'},
         {id: 'aria-input-field-name', weight: 3, group: 'a11y-aria'},
+        {id: 'aria-meter-name', weight: 3, group: 'a11y-aria'},
+        {id: 'aria-progressbar-name', weight: 3, group: 'a11y-aria'},
         {id: 'aria-required-attr', weight: 10, group: 'a11y-aria'},
         {id: 'aria-required-children', weight: 10, group: 'a11y-aria'},
         {id: 'aria-required-parent', weight: 10, group: 'a11y-aria'},
         {id: 'aria-roles', weight: 10, group: 'a11y-aria'},
         {id: 'aria-toggle-field-name', weight: 3, group: 'a11y-aria'},
+        {id: 'aria-tooltip-name', weight: 3, group: 'a11y-aria'},
+        {id: 'aria-treeitem-name', weight: 3, group: 'a11y-aria'},
         {id: 'aria-valid-attr-value', weight: 10, group: 'a11y-aria'},
         {id: 'aria-valid-attr', weight: 10, group: 'a11y-aria'},
         {id: 'button-name', weight: 10, group: 'a11y-names-labels'},
@@ -509,7 +526,6 @@ const defaultConfig = {
         {id: 'image-alt', weight: 10, group: 'a11y-names-labels'},
         {id: 'input-image-alt', weight: 10, group: 'a11y-names-labels'},
         {id: 'label', weight: 10, group: 'a11y-names-labels'},
-        {id: 'layout-table', weight: 3, group: 'a11y-tables-lists'},
         {id: 'link-name', weight: 3, group: 'a11y-names-labels'},
         {id: 'list', weight: 3, group: 'a11y-tables-lists'},
         {id: 'listitem', weight: 3, group: 'a11y-tables-lists'},
@@ -521,7 +537,6 @@ const defaultConfig = {
         {id: 'th-has-data-cells', weight: 3, group: 'a11y-tables-lists'},
         {id: 'valid-lang', weight: 3, group: 'a11y-language'},
         {id: 'video-caption', weight: 10, group: 'a11y-audio-video'},
-        {id: 'video-description', weight: 10, group: 'a11y-audio-video'},
         // Manual audits
         {id: 'logical-tab-order', weight: 0},
         {id: 'focusable-controls', weight: 0},
@@ -544,18 +559,23 @@ const defaultConfig = {
         {id: 'geolocation-on-start', weight: 1, group: 'best-practices-trust-safety'},
         {id: 'notification-on-start', weight: 1, group: 'best-practices-trust-safety'},
         {id: 'no-vulnerable-libraries', weight: 1, group: 'best-practices-trust-safety'},
+        {id: 'csp-xss', weight: 0, group: 'best-practices-trust-safety'},
         // User Experience
         {id: 'password-inputs-can-be-pasted-into', weight: 1, group: 'best-practices-ux'},
         {id: 'image-aspect-ratio', weight: 1, group: 'best-practices-ux'},
         {id: 'image-size-responsive', weight: 1, group: 'best-practices-ux'},
+        {id: 'preload-fonts', weight: 1, group: 'best-practices-ux'},
         // Browser Compatibility
         {id: 'doctype', weight: 1, group: 'best-practices-browser-compat'},
         {id: 'charset', weight: 1, group: 'best-practices-browser-compat'},
         // General Group
+        {id: 'no-unload-listeners', weight: 1, group: 'best-practices-general'},
         {id: 'appcache-manifest', weight: 1, group: 'best-practices-general'},
         {id: 'js-libraries', weight: 0, group: 'best-practices-general'},
         {id: 'deprecations', weight: 1, group: 'best-practices-general'},
         {id: 'errors-in-console', weight: 1, group: 'best-practices-general'},
+        {id: 'valid-source-maps', weight: 0, group: 'best-practices-general'},
+        {id: 'inspector-issues', weight: 1, group: 'best-practices-general'},
       ],
     },
     'seo': {
@@ -586,21 +606,15 @@ const defaultConfig = {
       description: str_(UIStrings.pwaCategoryDescription),
       manualDescription: str_(UIStrings.pwaCategoryManualDescription),
       auditRefs: [
-        // Fast and Reliable
-        {id: 'load-fast-enough-for-pwa', weight: 7, group: 'pwa-fast-reliable'},
-        {id: 'works-offline', weight: 5, group: 'pwa-fast-reliable'},
-        {id: 'offline-start-url', weight: 1, group: 'pwa-fast-reliable'},
         // Installable
-        {id: 'is-on-https', weight: 2, group: 'pwa-installable'},
-        {id: 'service-worker', weight: 1, group: 'pwa-installable'},
         {id: 'installable-manifest', weight: 2, group: 'pwa-installable'},
         // PWA Optimized
+        {id: 'service-worker', weight: 1, group: 'pwa-optimized'},
         {id: 'redirects-http', weight: 2, group: 'pwa-optimized'},
         {id: 'splash-screen', weight: 1, group: 'pwa-optimized'},
         {id: 'themed-omnibox', weight: 1, group: 'pwa-optimized'},
         {id: 'content-width', weight: 1, group: 'pwa-optimized'},
         {id: 'viewport', weight: 2, group: 'pwa-optimized'},
-        {id: 'without-javascript', weight: 1, group: 'pwa-optimized'},
         {id: 'apple-touch-icon', weight: 1, group: 'pwa-optimized'},
         {id: 'maskable-icon', weight: 1, group: 'pwa-optimized'},
         // Manual audits

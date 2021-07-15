@@ -28,15 +28,15 @@ function cleanAndFormatLHR(lhrString) {
 
   // TODO: Resolve the below so we don't need to force it to a boolean value:
   // 1) The string|boolean story for proto
-  // 2) Travis gets a absolute path during yarn diff:sample-json
+  // 2) CI gets a absolute path during yarn diff:sample-json
   lhr.configSettings.auditMode = true;
 
   // Set timing values, which change from run to run, to predictable values
   lhr.timing.total = 12345.6789;
   lhr.timing.entries.forEach(entry => {
-    // @ts-ignore - write to readonly property
+    // @ts-expect-error - write to readonly property
     entry.duration = 100;
-    // @ts-ignore - write to readonly property
+    // @ts-expect-error - write to readonly property
     entry.startTime = 0; // Not realsitic, but avoids a lot of diff churn
   });
 

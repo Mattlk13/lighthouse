@@ -24,8 +24,7 @@ const OK_DIFF_AS_PERCENT_THRESHOLD = 0.5;
 
 const INPUT_PATH = process.argv[2] || constants.SITE_INDEX_WITH_GOLDEN_WITH_COMPUTED_PATH;
 const COMPUTATIONS_PATH = path.resolve(process.cwd(), INPUT_PATH);
-const BASELINE_PATH = constants.MASTER_COMPUTED_PATH;
-
+const BASELINE_PATH = constants.BASELINE_COMPUTED_PATH;
 
 if (!fs.existsSync(COMPUTATIONS_PATH)) throw new Error('Usage $0 <computed summary file>');
 
@@ -117,8 +116,8 @@ function evaluateAndPrintAccuracy(metric, lanternMetric) {
     )}`.padEnd(30),
   ];
 
-  allEvaluations.push(...actualAccuracy.evaluations);
-  baselineEvaluations.push(...baselineAccuracy.evaluations);
+  if (actualAccuracy.evaluations) allEvaluations.push(...actualAccuracy.evaluations);
+  if (baselineAccuracy.evaluations) baselineEvaluations.push(...baselineAccuracy.evaluations);
 
   if (lanternMetric.includes('roughEstimate')) {
     console.log(...strings);
@@ -193,7 +192,7 @@ function findAndPrintFixesRegressions() {
       chalk.gray('(real)'),
       entry.actual,
       chalk.gray('(cur)'),
-      // @ts-ignore - baseline always exists at this point
+      // @ts-expect-error - baseline always exists at this point
       entry.baseline.actual,
       chalk.gray('(prev)')
     );
@@ -230,10 +229,6 @@ evaluateAndPrintAccuracy('firstMeaningfulPaint', 'optimisticFMP');
 evaluateAndPrintAccuracy('firstMeaningfulPaint', 'pessimisticFMP');
 evaluateAndPrintAccuracy('firstMeaningfulPaint', 'roughEstimateOfFMP');
 
-evaluateAndPrintAccuracy('timeToFirstInteractive', 'optimisticTTFCPUI');
-evaluateAndPrintAccuracy('timeToFirstInteractive', 'pessimisticTTFCPUI');
-evaluateAndPrintAccuracy('timeToFirstInteractive', 'roughEstimateOfTTFCPUI');
-
 evaluateAndPrintAccuracy('timeToConsistentlyInteractive', 'optimisticTTI');
 evaluateAndPrintAccuracy('timeToConsistentlyInteractive', 'pessimisticTTI');
 evaluateAndPrintAccuracy('timeToConsistentlyInteractive', 'roughEstimateOfTTI');
@@ -260,11 +255,6 @@ findAndPrintWorst10Sites('firstMeaningfulPaint', [
   'optimisticFMP',
   'pessimisticFMP',
   'roughEstimateOfFMP',
-]);
-findAndPrintWorst10Sites('timeToFirstInteractive', [
-  'optimisticTTFCPUI',
-  'pessimisticTTFCPUI',
-  'roughEstimateOfTTFCPUI',
 ]);
 findAndPrintWorst10Sites('timeToConsistentlyInteractive', [
   'optimisticTTI',
@@ -294,7 +284,7 @@ const printBucket = (label, bucketFilterFn, opts) => {
   console.log(
     `${label}:`.padEnd(10),
     actual.toString().padEnd(5),
-    // @ts-ignore - overly aggressive no implicit any
+    // @ts-expect-error - overly aggressive no implicit any
     toBaselineDiffString(actual, baseline, {...opts, format: x => x.toString()})
   );
 };

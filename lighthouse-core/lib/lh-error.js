@@ -15,13 +15,18 @@ const UIStrings = {
    * */
   didntCollectScreenshots: `Chrome didn't collect any screenshots during the page load. Please make sure there is content visible on the page, and then try re-running Lighthouse. ({errorCode})`,
   /**
-   * @description Error message explaining that the network trace was not able to be recorded for the Lighthouse run.
+   * @description Error message explaining that the performance trace was not able to be recorded for the Lighthouse run.
    * @example {NO_TRACING_STARTED} errorCode
    * */
   badTraceRecording: 'Something went wrong with recording the trace over your page load. Please run Lighthouse again. ({errorCode})',
   /**
+   * @description Error message explaining that the First Contentful Paint metric was not seen during the page load.
+   * @example {NO_FCP} errorCode
+   * */
+  noFcp: 'The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. ({errorCode})',
+  /**
    * @description Error message explaining that the page loaded too slowly to perform a Lighthouse run.
-   * @example {FMP_TOO_LATE_FOR_FCPUI} errorCode
+   * @example {NO_TTI_CPU_IDLE_PERIOD} errorCode
    * */
   pageLoadTookTooLong: 'Your page took too long to load. Please follow the opportunities in the report to reduce your page load time, and then try re-running Lighthouse. ({errorCode})',
   /** Error message explaining that Lighthouse could not load the requested URL and the steps that might be taken to fix the unreliability. */
@@ -47,6 +52,11 @@ const UIStrings = {
   internalChromeError: 'An internal Chrome error occurred. Please restart Chrome and try re-running Lighthouse.',
   /** Error message explaining that fetching the resources of the webpage has taken longer than the maximum time. */
   requestContentTimeout: 'Fetching resource content has exceeded the allotted time',
+  /**
+   * @description Error message explaining that the webpage is non-HTML, so audits are ill-defined.
+   * @example {application/xml} mimeType
+   * */
+  notHtml: 'The page provided is not HTML (served as MIME type {mimeType}).',
   /** Error message explaining that the provided URL Lighthouse points to is not valid, and cannot be loaded. */
   urlInvalid: 'The URL you have provided appears to be invalid.',
   /**
@@ -61,12 +71,12 @@ const UIStrings = {
   /** Error message explaining that Lighthouse timed out while waiting for the initial connection to the Chrome Devtools protocol. */
   criTimeout: 'Timeout waiting for initial Debugger Protocol connection.',
   /**
-   * @description Error message explaning that a resource that was required for testing was never collected. "artifactName" will be replaced with the name of the resource that wasn't collected.
+   * @description Error message explaining that a resource that was required for testing was never collected. "artifactName" will be replaced with the name of the resource that wasn't collected.
    * @example {WebAppManifest} artifactName
    * */
   missingRequiredArtifact: 'Required {artifactName} gatherer did not run.',
   /**
-   * @description Error message explaning that there was an error while trying to collect a resource that was required for testing. "artifactName" will be replaced with the name of the resource that wasn't collected; "errorMessage" will be replaced with a string description of the error that occurred.
+   * @description Error message explaining that there was an error while trying to collect a resource that was required for testing. "artifactName" will be replaced with the name of the resource that wasn't collected; "errorMessage" will be replaced with a string description of the error that occurred.
    * @example {WebAppManifest} artifactName
    * @example {Manifest invalid} errorMessage
    * */
@@ -122,9 +132,10 @@ class LighthouseError extends Error {
    */
   static fromProtocolMessage(method, protocolError) {
     // extract all errors with a regex pattern to match against.
-    const protocolErrors = Object.values(LighthouseError.errors).filter(e => e.pattern);
     // if we find one, use the friendly LighthouseError definition
-    const matchedErrorDefinition = protocolErrors.find(e => e.pattern.test(protocolError.message));
+    const matchedErrorDefinition = Object.values(LighthouseError.errors)
+      .filter(e => e.pattern)
+      .find(e => e.pattern && e.pattern.test(protocolError.message));
     if (matchedErrorDefinition) {
       return new LighthouseError(matchedErrorDefinition);
     }
@@ -161,7 +172,7 @@ class LighthouseError extends Error {
     // Unexpected errors won't be LHErrors, but we want them serialized as well.
     if (err instanceof Error) {
       const {message, stack} = err;
-      // @ts-ignore - code can be helpful for e.g. node errors, so preserve it if it's present.
+      // @ts-expect-error - code can be helpful for e.g. node errors, so preserve it if it's present.
       const code = err.code;
       return {
         sentinel: ERROR_SENTINEL,
@@ -237,6 +248,11 @@ const ERRORS = {
     message: UIStrings.badTraceRecording,
     lhrRuntimeError: true,
   },
+  NO_RESOURCE_REQUEST: {
+    code: 'NO_RESOURCE_REQUEST',
+    message: UIStrings.badTraceRecording,
+    lhrRuntimeError: true,
+  },
   NO_NAVSTART: {
     code: 'NO_NAVSTART',
     message: UIStrings.badTraceRecording,
@@ -244,7 +260,7 @@ const ERRORS = {
   },
   NO_FCP: {
     code: 'NO_FCP',
-    message: UIStrings.badTraceRecording,
+    message: UIStrings.noFcp,
     lhrRuntimeError: true,
   },
   NO_DCL: {
@@ -260,19 +276,16 @@ const ERRORS = {
     code: 'NO_LCP',
     message: UIStrings.badTraceRecording,
   },
+  NO_LCP_ALL_FRAMES: {
+    code: 'NO_LCP_ALL_FRAMES',
+    message: UIStrings.badTraceRecording,
+  },
   UNSUPPORTED_OLD_CHROME: {
     code: 'UNSUPPORTED_OLD_CHROME',
     message: UIStrings.oldChromeDoesNotSupportFeature,
   },
-  /** Layout Shift trace events are found but without data */
-  LAYOUT_SHIFT_MISSING_DATA: {
-    code: 'LAYOUT_SHIFT_MISSING_DATA',
-    message: UIStrings.badTraceRecording,
-  },
 
   // TTI calculation failures
-  FMP_TOO_LATE_FOR_FCPUI: {code: 'FMP_TOO_LATE_FOR_FCPUI', message: UIStrings.pageLoadTookTooLong},
-  NO_FCPUI_IDLE_PERIOD: {code: 'NO_FCPUI_IDLE_PERIOD', message: UIStrings.pageLoadTookTooLong},
   NO_TTI_CPU_IDLE_PERIOD: {code: 'NO_TTI_CPU_IDLE_PERIOD', message: UIStrings.pageLoadTookTooLong},
   NO_TTI_NETWORK_IDLE_PERIOD: {
     code: 'NO_TTI_NETWORK_IDLE_PERIOD',
@@ -320,6 +333,12 @@ const ERRORS = {
   PAGE_HUNG: {
     code: 'PAGE_HUNG',
     message: UIStrings.pageLoadFailedHung,
+    lhrRuntimeError: true,
+  },
+  /* Used when the page is non-HTML. */
+  NOT_HTML: {
+    code: 'NOT_HTML',
+    message: UIStrings.notHtml,
     lhrRuntimeError: true,
   },
 

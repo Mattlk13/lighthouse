@@ -13,18 +13,18 @@ const artifactPath = 'lighthouse-core/test/results/artifacts';
 const {server} = require('../../lighthouse-cli/test/fixtures/static-server.js');
 const budgetedConfig = require('../test/results/sample-config.js');
 
+// All artifacts must have resources from a consistent port, to ensure reproducibility. https://github.com/GoogleChrome/lighthouse/issues/11776
+const MAGIC_SERVER_PORT = 10200;
 /**
  * Update the report artifacts. If artifactName is set only that artifact will be updated.
  * @param {keyof LH.Artifacts=} artifactName
  */
 async function update(artifactName) {
-  // get an available port
-  await server.listen(0, 'localhost');
-  const port = server.getPort();
+  await server.listen(MAGIC_SERVER_PORT, 'localhost');
 
   const oldArtifacts = assetSaver.loadArtifacts(artifactPath);
 
-  const url = `http://localhost:${port}/dobetterweb/dbw_tester.html`;
+  const url = `http://localhost:${MAGIC_SERVER_PORT}/dobetterweb/dbw_tester.html`;
   const rawFlags = [
     `--gather-mode=${artifactPath}`,
     url,
@@ -41,7 +41,7 @@ async function update(artifactName) {
     }
     const finalArtifacts = oldArtifacts;
     const newArtifact = newArtifacts[artifactName];
-    // @ts-ignore tsc can't yet express that artifactName is only a single type in each iteration, not a union of types.
+    // @ts-expect-error tsc can't yet express that artifactName is only a single type in each iteration, not a union of types.
     finalArtifacts[artifactName] = newArtifact;
     await assetSaver.saveArtifacts(finalArtifacts, artifactPath);
   }

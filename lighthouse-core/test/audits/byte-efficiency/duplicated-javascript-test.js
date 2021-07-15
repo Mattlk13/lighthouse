@@ -7,25 +7,17 @@
 
 /* eslint-env jest */
 
-const fs = require('fs');
 const DuplicatedJavascript = require('../../../audits/byte-efficiency/duplicated-javascript.js');
 const trace = require('../../fixtures/traces/lcp-m78.json');
 const devtoolsLog = require('../../fixtures/traces/lcp-m78.devtools.log.json');
-
-function load(name) {
-  const mapJson = fs.readFileSync(
-    `${__dirname}/../../fixtures/source-maps/${name}.js.map`,
-    'utf-8'
-  );
-  const content = fs.readFileSync(`${__dirname}/../../fixtures/source-maps/${name}.js`, 'utf-8');
-  return {map: JSON.parse(mapJson), content};
-}
+const {loadSourceMapFixture} = require('../../test-utils.js');
 
 describe('DuplicatedJavascript computed artifact', () => {
   it('works (simple)', async () => {
     const context = {computedCache: new Map(), options: {ignoreThresholdInBytes: 200}};
-    const {map, content} = load('foo.min');
+    const {map, content} = loadSourceMapFixture('foo.min');
     const artifacts = {
+      GatherContext: {gatherMode: 'navigation'},
       URL: {finalUrl: 'https://example.com'},
       SourceMaps: [
         {scriptUrl: 'https://example.com/foo1.min.js', map},
@@ -41,37 +33,18 @@ describe('DuplicatedJavascript computed artifact', () => {
     expect({items: results.items, wastedBytesByUrl: results.wastedBytesByUrl})
       .toMatchInlineSnapshot(`
       Object {
-        "items": Array [
-          Object {
-            "source": "Other",
-            "subItems": Object {
-              "items": Array [
-                Object {
-                  "url": "https://example.com/foo1.min.js",
-                },
-                Object {
-                  "url": "https://example.com/foo2.min.js",
-                },
-              ],
-              "type": "subitems",
-            },
-            "totalBytes": 0,
-            "url": "",
-            "wastedBytes": 224,
-          },
-        ],
-        "wastedBytesByUrl": Map {
-          "https://example.com/foo2.min.js" => 224,
-        },
+        "items": Array [],
+        "wastedBytesByUrl": Map {},
       }
     `);
   });
 
   it('works (complex)', async () => {
     const context = {computedCache: new Map(), options: {ignoreThresholdInBytes: 200}};
-    const bundleData1 = load('coursehero-bundle-1');
-    const bundleData2 = load('coursehero-bundle-2');
+    const bundleData1 = loadSourceMapFixture('coursehero-bundle-1');
+    const bundleData2 = loadSourceMapFixture('coursehero-bundle-2');
     const artifacts = {
+      GatherContext: {gatherMode: 'navigation'},
       URL: {finalUrl: 'https://example.com'},
       SourceMaps: [
         {scriptUrl: 'https://example.com/coursehero-bundle-1.js', map: bundleData1.map},
@@ -131,11 +104,11 @@ describe('DuplicatedJavascript computed artifact', () => {
             "subItems": Object {
               "items": Array [
                 Object {
-                  "sourceTransferBytes": 1804,
+                  "sourceTransferBytes": 502,
                   "url": "https://example.com/coursehero-bundle-1.js",
                 },
                 Object {
-                  "sourceTransferBytes": 1455,
+                  "sourceTransferBytes": 502,
                   "url": "https://example.com/coursehero-bundle-2.js",
                 },
               ],
@@ -143,7 +116,7 @@ describe('DuplicatedJavascript computed artifact', () => {
             },
             "totalBytes": 0,
             "url": "",
-            "wastedBytes": 1455,
+            "wastedBytes": 502,
           },
           Object {
             "source": "js/src/utils/service/amplitude-service.ts",
@@ -317,25 +290,6 @@ describe('DuplicatedJavascript computed artifact', () => {
             "wastedBytes": 1022,
           },
           Object {
-            "source": "node_modules/lodash-es",
-            "subItems": Object {
-              "items": Array [
-                Object {
-                  "sourceTransferBytes": 578,
-                  "url": "https://example.com/coursehero-bundle-2.js",
-                },
-                Object {
-                  "sourceTransferBytes": 564,
-                  "url": "https://example.com/coursehero-bundle-1.js",
-                },
-              ],
-              "type": "subitems",
-            },
-            "totalBytes": 0,
-            "url": "",
-            "wastedBytes": 564,
-          },
-          Object {
             "source": "Other",
             "subItems": Object {
               "items": Array [
@@ -350,12 +304,12 @@ describe('DuplicatedJavascript computed artifact', () => {
             },
             "totalBytes": 0,
             "url": "",
-            "wastedBytes": 905,
+            "wastedBytes": 542,
           },
         ],
         "wastedBytesByUrl": Map {
-          "https://example.com/coursehero-bundle-2.js" => 29241,
-          "https://example.com/coursehero-bundle-1.js" => 3184,
+          "https://example.com/coursehero-bundle-2.js" => 27925,
+          "https://example.com/coursehero-bundle-1.js" => 2620,
         },
       }
     `);
@@ -363,10 +317,11 @@ describe('DuplicatedJavascript computed artifact', () => {
 
   it('.audit', async () => {
     // Use a real trace fixture, but the bundle stuff.
-    const bundleData1 = load('coursehero-bundle-1');
-    const bundleData2 = load('coursehero-bundle-2');
+    const bundleData1 = loadSourceMapFixture('coursehero-bundle-1');
+    const bundleData2 = loadSourceMapFixture('coursehero-bundle-2');
     const artifacts = {
       URL: {finalUrl: 'https://www.paulirish.com'},
+      GatherContext: {gatherMode: 'navigation'},
       devtoolsLogs: {
         [DuplicatedJavascript.DEFAULT_PASS]: devtoolsLog,
       },

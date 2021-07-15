@@ -5,7 +5,8 @@
  */
 'use strict';
 
-/** @fileoverview
+/**
+ * @fileoverview
  * Define message file to be used for a given locale. A few aliases are defined below.
  *
  * Google locale inheritance rules: https://goto.google.com/ccssm
@@ -35,7 +36,6 @@ const locales = {
   'ar-XB': require('./locales/ar-XB.json'), // psuedolocalization
   'ar': require('./locales/ar.json'),
   'bg': require('./locales/bg.json'),
-  'bs': require('./locales/hr.json'), // Alias of 'hr'
   'ca': require('./locales/ca.json'),
   'cs': require('./locales/cs.json'),
   'da': require('./locales/da.json'),
@@ -83,7 +83,6 @@ const locales = {
   'iw': require('./locales/he.json'), // Alias of 'he'
   'ja': require('./locales/ja.json'),
   'ko': require('./locales/ko.json'),
-  'ln': require('./locales/fr.json'), // Alias of 'fr'
   'lt': require('./locales/lt.json'),
   'lv': require('./locales/lv.json'),
   'mo': require('./locales/ro.json'), // Alias of 'ro'

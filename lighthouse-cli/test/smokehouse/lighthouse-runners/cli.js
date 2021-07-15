@@ -18,7 +18,6 @@ const {promisify} = require('util');
 const execFileAsync = promisify(require('child_process').execFile);
 
 const log = require('lighthouse-logger');
-const rimraf = promisify(require('rimraf'));
 
 const assetSaver = require('../../../../lighthouse-core/lib/asset-saver.js');
 const LocalConsole = require('../lib/local-console.js');
@@ -36,8 +35,8 @@ async function runLighthouse(url, configJson, testRunnerOptions = {}) {
 
   const {isDebug} = testRunnerOptions;
   return internalRun(url, tmpPath, configJson, isDebug)
-    // Wait for internalRun() before rimraffing scratch directory.
-    .finally(() => !isDebug && rimraf(tmpPath));
+    // Wait for internalRun() before removing scratch directory.
+    .finally(() => !isDebug && fs.rmdir(tmpPath, {recursive: true}));
 }
 
 /**
@@ -55,7 +54,7 @@ async function internalRun(url, tmpPath, configJson, isDebug) {
   const artifactsDirectory = `${tmpPath}/artifacts/`;
 
   const args = [
-    'lighthouse-cli/index.js',
+    `${__dirname}/../../../index.js`, // 'lighthouse-cli/index.js'
     `${url}`,
     `--output-path=${outputPath}`,
     '--output=json',
@@ -70,12 +69,6 @@ async function internalRun(url, tmpPath, configJson, isDebug) {
     const configPath = `${tmpPath}/config.json`;
     await fs.writeFile(configPath, JSON.stringify(configJson));
     args.push(`--config-path=${configPath}`);
-  }
-
-  if (process.env.APPVEYOR) {
-    // Appveyor is hella slow already, disable CPU throttling so we're not 16x slowdown
-    // see https://github.com/GoogleChrome/lighthouse/issues/4891
-    args.push('--throttling.cpuSlowdownMultiplier=1');
   }
 
   const command = 'node';

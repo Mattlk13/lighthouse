@@ -9,10 +9,12 @@ declare global {
     export type Details =
       Details.CriticalRequestChain |
       Details.DebugData |
+      Details.TreemapData |
       Details.Filmstrip |
       Details.List |
       Details.Opportunity |
       Details.Screenshot |
+      Details.FullPageScreenshot |
       Details.Table;
 
     // Details namespace.
@@ -61,6 +63,15 @@ declare global {
         data: string;
       }
 
+      /**
+       * A screenshot of the entire page, including width and height information,
+       * and the locations of interesting nodes.
+       * Used by element screenshots renderer.
+       */
+      export interface FullPageScreenshot extends LH.Artifacts.FullPageScreenshot {
+        type: 'full-page-screenshot';
+      }
+
       export interface Table {
         type: 'table';
         headings: TableColumnHeading[];
@@ -87,11 +98,16 @@ declare global {
         [p: string]: any;
       }
 
+      export interface TreemapData {
+        type: 'treemap-data';
+        nodes: LH.Treemap.Node[];
+      }
+
       /** String enum of possible types of values found within table items. */
       type ItemValueType = 'bytes' | 'code' | 'link' | 'ms' | 'multi' | 'node' | 'source-location' | 'numeric' | 'text' | 'thumbnail' | 'timespanMs' | 'url';
 
       /** Possible types of values found within table items. */
-      type ItemValue = string | number | boolean | DebugData | NodeValue | SourceLocationValue | LinkValue | UrlValue | CodeValue | TableSubItems;
+      type ItemValue = string | number | boolean | DebugData | NodeValue | SourceLocationValue | LinkValue | UrlValue | CodeValue | NumericValue | IcuMessage | TableSubItems;
 
       // TODO: drop TableColumnHeading, rename OpportunityColumnHeading to TableColumnHeading and
       // use that for all table-like audit details.
@@ -105,7 +121,7 @@ declare global {
          */
         key: string|null;
         /** Readable text label of the field. */
-        text: string;
+        text: IcuMessage | string;
         /**
          * The data format of the column of values being described. Usually
          * those values will be primitives rendered as this type, but the values
@@ -137,7 +153,7 @@ declare global {
          */
         key: string|null;
         /** Readable text label of the field. */
-        label: string;
+        label: IcuMessage | string;
         /**
          * The data format of the column of values being described. Usually
          * those values will be primitives rendered as this type, but the values
@@ -171,7 +187,7 @@ declare global {
        */
       export interface CodeValue {
         type: 'code';
-        value: string;
+        value: IcuMessage | string;
       }
 
       /**
@@ -191,8 +207,11 @@ declare global {
        */
       export interface NodeValue {
         type: 'node';
+        /** Unique identifier. */
+        lhId?: string;
         path?: string;
         selector?: string;
+        boundingRect?: Artifacts.Rect;
         /** An HTML snippet used to identify the node. */
         snippet?: string;
         /** A human-friendly text descriptor that's used to identify the node more quickly. */
@@ -205,12 +224,23 @@ declare global {
        */
       export interface SourceLocationValue {
         type: 'source-location';
-        /** urls from the network are always valid urls. otherwise, urls come from either a comment or header, and may not be well-formed. */
+        /** A "url" representing the source file. May not be a valid URL, see `urlProvider`. */
         url: string;
-        /** 'network' when the url is the actual, observed resource url. 'comment' when the url comes from a sourceMapURL comment or X-SourceMap header */
+        /**
+         * - `network` when the url is the actual, observed resource url. This is always a valid URL.
+         * - `comment` when the url comes from a sourceURL comment. This could be anything, really.
+         */
         urlProvider: 'network' | 'comment';
+        /** Zero-indexed. */
         line: number;
         column: number;
+        /** The original file location from the source map. */
+        original?: {
+          /** The relevant file from the map's `sources` array. */
+          file: string;
+          line: number;
+          column: number;
+        };
       }
 
       /**
@@ -252,6 +282,16 @@ declare global {
         generalMessages: {
           message: string
         }[];
+      }
+
+      /**
+       * A value used within a details object, intended to be displayed as a ms timing
+       * or a numeric value based on the metric name.
+       */
+      export interface NumericValue {
+        type: 'numeric',
+        value: number,
+        granularity?: number,
       }
     }
   }
