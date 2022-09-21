@@ -3,9 +3,8 @@
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
-'use strict';
 
-const SettingsController = require('./settings-controller.js');
+import * as SettingsController from './settings-controller.js';
 
 const VIEWER_URL = 'https://googlechrome.github.io/lighthouse/viewer/';
 const optionsVisibleClass = 'main--options-visible';
@@ -26,12 +25,11 @@ const STRINGS = BROWSER_BRAND === 'chrome' ? CHROME_STRINGS : FIREFOX_STRINGS;
 /**
  * Guaranteed context.querySelector. Always returns an element or throws if
  * nothing matches query.
- * @param {string} query
+ * @template {string} T
+ * @param {T} query
  * @param {ParentNode=} context
- * @return {HTMLElement}
  */
 function find(query, context = document) {
-  /** @type {?HTMLElement} */
   const result = context.querySelector(query);
   if (result === null) {
     throw new Error(`query ${query} not found`);
@@ -54,10 +52,11 @@ function createOptionItem(text, id, isChecked) {
   }
 
   const label = document.createElement('label');
-  label.appendChild(input);
-  label.appendChild(document.createElement('span')).textContent = text;
+  const span = document.createElement('span');
+  span.textContent = text;
+  label.append(input, span);
   const listItem = document.createElement('li');
-  listItem.appendChild(label);
+  listItem.append(label);
 
   return listItem;
 }
@@ -88,11 +87,11 @@ function generateOptionsList(settings) {
 
   SettingsController.DEFAULT_CATEGORIES.forEach(category => {
     const isChecked = settings.selectedCategories.includes(category.id);
-    frag.appendChild(createOptionItem(category.title, category.id, isChecked));
+    frag.append(createOptionItem(category.title, category.id, isChecked));
   });
 
   const optionsCategoriesList = find('.options__categories');
-  optionsCategoriesList.appendChild(frag);
+  optionsCategoriesList.append(frag);
 }
 
 function fillDevToolsShortcut() {
@@ -103,15 +102,14 @@ function fillDevToolsShortcut() {
 
 /**
  * Create the settings from the state of the options form, save in storage, and return it.
- * @returns {SettingsController.Settings}
+ * @return {SettingsController.Settings}
  */
 function readSettingsFromDomAndPersist() {
   const optionsEl = find('.section--options');
   // Save settings when options page is closed.
-  const checkboxes = /** @type {NodeListOf<HTMLInputElement>} */
-    (optionsEl.querySelectorAll('.options__categories input:checked'));
+  const checkboxes = optionsEl.querySelectorAll('.options__categories input:checked');
   const selectedCategories = Array.from(checkboxes).map(input => input.value);
-  const device = /** @type {HTMLInputElement} */ (find('input[name="device"]:checked')).value;
+  const device = find('input[name="device"]:checked').value;
 
   const settings = {
     selectedCategories,
@@ -155,8 +153,8 @@ async function initPopup() {
 
   const mainEl = find('main');
   const optionsEl = find('.button--configure');
-  const generateReportButton = /** @type {HTMLButtonElement} */ (find('.button--generate'));
-  const configureButton = /** @type {HTMLButtonElement} */ (find('.button--configure'));
+  const generateReportButton = find('button.button--generate');
+  const configureButton = find('button.button--configure');
   const psiDisclaimerEl = find('.psi-disclaimer');
   const errorMessageEl = find('.errormsg');
   const optionsFormEl = find('.options__form');
@@ -181,8 +179,7 @@ async function initPopup() {
 
   // Generate checkboxes from saved settings.
   generateOptionsList(settings);
-  const selectedDeviceEl = /** @type {HTMLInputElement} */ (
-    find(`.options__device input[value="${settings.device}"]`));
+  const selectedDeviceEl = find(`.options__device input[value="${settings.device}"]`);
   selectedDeviceEl.checked = true;
 
   generateReportButton.addEventListener('click', () => {
